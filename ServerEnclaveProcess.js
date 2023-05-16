@@ -1,39 +1,41 @@
-const { MessageDispatcher } = require("./MessageDispatcher");
+const {MessageDispatcher} = require("./MessageDispatcher");
 const ServerEnclave = require("./ServerEnclave");
-const ObservableMixin = require("./../opendsu-sdk/modules/opendsu/utils/ObservableMixin");
-
-const openDSU = require("../opendsu-sdk/modules/opendsu");
+const openDSU = require("opendsu");
+const utils = openDSU.loadAPI("utils");
+const ObservableMixin = utils.ObservableMixin;
 const scAPI = openDSU.loadAPI("sc");
 const w3cDID = openDSU.loadAPI("w3cdid");
 
-class ServerEnclaveProcess {
-    constructor(didIdentifier, privateKeys, storageFolder) {
-        this.enclave = new ServerEnclave(didIdentifier, storageFolder);
-        this.sc = scAPI.getSecurityContext(this.enclave);
-        ObservableMixin(this);
-        this.sc.on("initialised", () => {
-            this.initMessaging(didIdentifier, privateKeys);
-        })
+function ServerEnclaveProcess(didIdentifier, privateKeys, storageFolder) {
+    const enclave = new ServerEnclave(didIdentifier, storageFolder);
+    let didDoc;
+    const sc = scAPI.getSecurityContext(enclave);
+    ObservableMixin(this);
+    sc.on("initialised", () => {
+        initMessaging(didIdentifier, privateKeys);
+    })
 
-    }
-
-    async initMessaging(didIdentifier, privateKeys) {
-        this.didDoc = await $$.promisify(w3cDID.resolveDID)(didIdentifier);
+    const initMessaging = async (didIdentifier, privateKeys) => {
+        didDoc = await $$.promisify(w3cDID.resolveDID)(didIdentifier);
         if (privateKeys) {
             await this.storeDIDPrivateKeys(privateKeys)
         }
-        this.messageDispatcher = new MessageDispatcher(this.didDoc, (err, commandObject) => {
+        this.messageDispatcher = new MessageDispatcher(didDoc)
+        this.messageDispatcher.waitForMessages((err, commandObject) => {
             this.execute(err, commandObject);
         });
         this.dispatchEvent("initialised");
     }
 
-    async storeDIDPrivateKeys(privateKeys) {
+
+    const storeDIDPrivateKeys = (privateKeys) => {
         return Promise.all(privateKeys
-            .map(key => $$.promisify(this.enclave.addPrivateKeyForDID)(this.didDoc, key)));
+            .map(key => {
+                return $$.promisify(enclave.addPrivateKeyForDID)(didDoc, key)
+            }));
     }
 
-    execute(err, commandObject) {
+    this.execute = (err, commandObject) => {
         if (err) {
             console.log(err);
             return;
@@ -50,19 +52,18 @@ class ServerEnclaveProcess {
                 this.messageDispatcher.sendMessage(JSON.stringify(resultObj), clientDID);
             }
             params.push(callback);
-            const enclave = this.enclave;
-            this.enclave[command].apply(enclave, params);
-        }
-        catch (err) {
+            enclave[command].apply(enclave, params);
+        } catch (err) {
             console.log(err);
             return err;
         }
     }
 
-    addEnclaveMethod(methodName, method){
-        this.enclave[methodName] = method;
+    this.addEnclaveMethod = (methodName, method) => {
+        enclave[methodName] = method;
     }
 }
+
 module.exports = ServerEnclaveProcess;
 
 const arguments = process.argv;

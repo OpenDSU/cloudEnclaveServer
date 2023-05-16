@@ -1,13 +1,12 @@
 
-require("../../opendsu-sdk/psknode/bundles/testsRuntime")
-const tir = require("../../opendsu-sdk/psknode/tests/util/tir");
+require("../opendsu-sdk/psknode/bundles/testsRuntime");
+const tir = require("../opendsu-sdk/psknode/tests/util/tir");
 
 const dc = require("double-check");
 const assert = dc.assert;
-const acl = require("../../opendsu-sdk/modules/acl-magic/index")
-const openDSU = require("../../opendsu-sdk/modules/opendsu");
+const acl = require("../acl-magic/index")
+const openDSU = require("opendsu");
 $$.__registerModule("acl-magic", acl)
-$$.__registerModule("opendsu", openDSU);
 
 const scAPI = openDSU.loadApi("sc");
 const w3cDID = openDSU.loadAPI("w3cdid");
@@ -15,7 +14,7 @@ const enclaveAPI = openDSU.loadApi("enclave");
 
 
 const { RemoteEnclaveServer } = require("..");
-
+process.env.REMOTE_ENCLAVE_SECRET = "something";
 
 assert.callback('Create enclave test', (testFinished) => {
     dc.createTestFolder('createDSU', async (err, folder) => {
@@ -34,23 +33,22 @@ assert.callback('Create enclave test', (testFinished) => {
 
         server.on("initialised", async() => {
             try {
-                const adminDIDDocument = await $$.promisify(w3cDID.createIdentity)("key", domain, "some secret");
+                const adminDIDDocument = await $$.promisify(w3cDID.createIdentity)("key", undefined, "some secret");
                 const documentIdentifier = adminDIDDocument.getIdentifier();
 
-                const enclaveDID = server.remoteDID;
+                const enclaveDIDDocument = await $$.promisify(w3cDID.createIdentity)("key", undefined, process.env.REMOTE_ENCLAVE_SECRET);
 
-                remoteDIDDocument = await $$.promisify(w3cDID.resolveDID)(enclaveDID);
-                const remoteEnclave = enclaveAPI.initialiseRemoteEnclaveClient(adminDIDDocument.getIdentifier(), remoteDIDDocument.getIdentifier());
+                const remoteEnclaveClient = enclaveAPI.initialiseRemoteEnclave(documentIdentifier, enclaveDIDDocument.getIdentifier());
 
                 const TABLE = "test_table";
                 const addedRecord = { data: 1 };
-                remoteEnclave.on("initialised", async () => {
+                remoteEnclaveClient.on("initialised", async () => {
                     try {
-                        await $$.promisify(remoteEnclave.insertRecord)("some_did", TABLE, "pk1", addedRecord, addedRecord);
-                        await $$.promisify(remoteEnclave.insertRecord)("some_did", TABLE, "pk2", addedRecord, addedRecord);
-                        const record = await $$.promisify(remoteEnclave.getRecord)("some_did", TABLE, "pk1");
+                        await $$.promisify(remoteEnclaveClient.insertRecord)("some_did", TABLE, "pk1", addedRecord, addedRecord);
+                        await $$.promisify(remoteEnclaveClient.insertRecord)("some_did", TABLE, "pk2", addedRecord, addedRecord);
+                        const record = await $$.promisify(remoteEnclaveClient.getRecord)("some_did", TABLE, "pk1");
                         assert.objectsAreEqual(record, addedRecord, "Records do not match");
-                        const allRecords = await $$.promisify(remoteEnclave.getAllRecords)("some_did", TABLE);
+                        const allRecords = await $$.promisify(remoteEnclaveClient.getAllRecords)("some_did", TABLE);
 
                         assert.equal(allRecords.length, 2, "Not all inserted records have been retrieved")
                         testFinished();

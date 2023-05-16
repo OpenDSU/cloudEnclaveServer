@@ -1,4 +1,4 @@
-const { getLokiEnclaveFacade } = require("./../opendsu-sdk/modules/opendsu/enclave/impl/lib/LokiEnclaveFacade");
+const { getLokiEnclaveFacade } = require("./utils");
 const constants = require("./constants");
 
 function LokiDBPathStrategy(storageFolder, config) {

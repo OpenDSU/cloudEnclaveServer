@@ -1,30 +1,19 @@
-const { getLokiEnclaveFacade } = require("../opendsu-sdk/modules/opendsu/enclave/impl/lib/LokiEnclaveFacade");
-const EnclaveMixin = require("../opendsu-sdk/modules/opendsu/enclave/impl/Enclave_Mixin");
+const {getLokiEnclaveFacade} = require("./utils");
+const openDSU = require("opendsu");
+const enclaveAPI = openDSU.loadAPI("enclave");
+const EnclaveMixin = enclaveAPI.EnclaveMixin;
 
-class ServerEnclave {
+function ServerEnclave(didDocument, storageFolder) {
+    EnclaveMixin(this, didDocument, undefined);
+    this.storageDB = getLokiEnclaveFacade(require("path").join(storageFolder, "enclave"));
 
-    constructor(didDocument, storageFolder){
-       
-        this.storageDB =  getLokiEnclaveFacade(require("path").join(storageFolder, "enclave"));
-        this.copyMethods();
-        EnclaveMixin(this, didDocument, undefined);
-        
-        this.initialised = true;
-    }
+    const initialised = true;
 
-    copyMethods(){
-        Object.keys(this.storageDB).forEach(method => {
-            this[method] = (...args) => {
-                this.storageDB[method](args);
-            }
-        })
-    }
-
-    getKeySSI(callback){
+    this.getKeySSI = (callback) => {
         return callback(undefined, undefined);
     }
 
-    getEnclaveType(){
+    this.getEnclaveType = () => {
         return "RemoteEnclave";
     }
 

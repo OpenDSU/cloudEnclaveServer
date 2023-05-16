@@ -1,11 +1,8 @@
-class MessageDispatcher {
-    constructor(didDocument, callback) {
-        this.didDoc = didDocument;
-        this.waitForMessages(callback)
-    }
+function MessageDispatcher(didDocument) {
+    const didDoc = didDocument;
 
-    waitForMessages(callback) {
-        this.didDoc.waitForMessages((err, res) => {
+    this.waitForMessages = (callback) => {
+        didDoc.waitForMessages((err, res) => {
             if (err) {
                 callback(err);
                 return
@@ -15,14 +12,13 @@ class MessageDispatcher {
         });
     };
 
-    sendMessage(result, clientDID) {
-        this.didDoc.sendMessage(result, clientDID, (err, res) => {
+    this.sendMessage = (result, clientDID) => {
+        didDoc.sendMessage(result, clientDID, (err, res) => {
             if (err) {
                 console.log(err);
             }
         })
-    }
-
+    };
 }
 
 module.exports = {
