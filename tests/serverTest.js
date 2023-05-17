@@ -33,12 +33,14 @@ assert.callback('Create enclave test', (testFinished) => {
 
         server.on("initialised", async() => {
             try {
-                const adminDIDDocument = await $$.promisify(w3cDID.createIdentity)("key", undefined, "some secret");
-                const documentIdentifier = adminDIDDocument.getIdentifier();
+                const keySSISpace = require("opendsu").loadAPI("keyssi");
+                const serverSeedSSI = keySSISpace.createSeedSSI("vault", process.env.REMOTE_ENCLAVE_SECRET);
+                const serverDIDDocument = await $$.promisify(w3cDID.createIdentity)("ssi:key", serverSeedSSI);
 
-                const enclaveDIDDocument = await $$.promisify(w3cDID.createIdentity)("key", undefined, process.env.REMOTE_ENCLAVE_SECRET);
+                const clientSeedSSI = keySSISpace.createSeedSSI("vault", "some secret");
+                const clientDIDDocument = await $$.promisify(w3cDID.createIdentity)("ssi:key", clientSeedSSI);
 
-                const remoteEnclaveClient = enclaveAPI.initialiseRemoteEnclave(documentIdentifier, enclaveDIDDocument.getIdentifier());
+                const remoteEnclaveClient = enclaveAPI.initialiseRemoteEnclave(serverDIDDocument.getIdentifier(), clientDIDDocument.getIdentifier());
 
                 const TABLE = "test_table";
                 const addedRecord = { data: 1 };

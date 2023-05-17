@@ -28,7 +28,9 @@ function RemoteEnclaveBootService(server) {
         const storageFolder = this.getStorageFolder();
 
         if (!fs.existsSync(path.join(storageFolder, "main"))) {
-            w3cDID.createIdentity("key", undefined, process.env.REMOTE_ENCLAVE_SECRET, async (err, didDoc) => {
+            const keySSISpace = require("opendsu").loadAPI("keyssi");
+            const seedSSI = keySSISpace.createSeedSSI("vault", process.env.REMOTE_ENCLAVE_SECRET);
+            w3cDID.createIdentity("ssi:key", seedSSI, async (err, didDoc) => {
                 if (err) {
                     console.log(err);
                     return err;
