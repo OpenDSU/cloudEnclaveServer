@@ -18,7 +18,7 @@ function ServerEnclaveProcess(didIdentifier, privateKeys, storageFolder) {
     const initMessaging = async (didIdentifier, privateKeys) => {
         didDoc = await $$.promisify(w3cDID.resolveDID)(didIdentifier);
         if (privateKeys) {
-            await this.storeDIDPrivateKeys(privateKeys)
+            await storeDIDPrivateKeys(privateKeys)
         }
         this.messageDispatcher = new MessageDispatcher(didDoc)
         this.messageDispatcher.waitForMessages((err, commandObject) => {

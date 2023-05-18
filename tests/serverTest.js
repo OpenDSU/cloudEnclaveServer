@@ -28,7 +28,7 @@ assert.callback('Create enclave test', (testFinished) => {
 
         const domain = "testDomain"
         const apiHub = await tir.launchConfigurableApiHubTestNodeAsync({ domains: [{ name: domain, config: testDomainConfig }] });
-        const server = new RemoteEnclaveServer();
+        const server = new RemoteEnclaveServer({rootFolder: folder});
         server.start();
 
         server.on("initialised", async() => {
@@ -40,7 +40,7 @@ assert.callback('Create enclave test', (testFinished) => {
                 const clientSeedSSI = keySSISpace.createSeedSSI("vault", "some secret");
                 const clientDIDDocument = await $$.promisify(w3cDID.createIdentity)("ssi:key", clientSeedSSI);
 
-                const remoteEnclaveClient = enclaveAPI.initialiseRemoteEnclave(serverDIDDocument.getIdentifier(), clientDIDDocument.getIdentifier());
+                const remoteEnclaveClient = enclaveAPI.initialiseRemoteEnclave(clientDIDDocument.getIdentifier(), serverDIDDocument.getIdentifier());
 
                 const TABLE = "test_table";
                 const addedRecord = { data: 1 };
