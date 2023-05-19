@@ -32,19 +32,19 @@ function RemoteEnclaveBootService(server) {
             const seedSSI = keySSISpace.createSeedSSI("vault", process.env.REMOTE_ENCLAVE_SECRET);
             w3cDID.createIdentity("ssi:key", seedSSI, async (err, didDoc) => {
                 if (err) {
-                    console.log(err);
-                    return err;
+                    server.dispatchEvent("error", err);
+                    return;
                 }
                 this.createFolderForDID(didDoc.getIdentifier(), (err, didDir) => {
                     if (err) {
-                        console.log(err);
+                        server.dispatchEvent("error", err);
                         return err;
                     }
                     this.main = new ServerEnclaveProcess(didDoc.getIdentifier(), didDoc.getPrivateKeys(), didDir);
                     this.main.on("initialised", () => {
                         server.remoteDID = didDoc.getIdentifier();
                         server.initialised = true;
-                        server.dispatchEvent("initialised");
+                        server.dispatchEvent("initialised", didDoc.getIdentifier());
                         this.decorateMainEnclave();
                     })
 
