@@ -6,21 +6,17 @@ const ObservableMixin = utils.ObservableMixin;
 const scAPI = openDSU.loadAPI("sc");
 const w3cDID = openDSU.loadAPI("w3cdid");
 
-function ServerEnclaveProcess(didIdentifier, privateKeys, storageFolder) {
-    const enclave = new ServerEnclave(didIdentifier, storageFolder);
+function ServerEnclaveProcess(didDocument, storageFolder) {
+    const enclave = new ServerEnclave(didDocument, storageFolder);
     let didDoc;
     const sc = scAPI.getSecurityContext(enclave);
     ObservableMixin(this);
     sc.on("initialised", () => {
-        initMessaging(didIdentifier, privateKeys);
+        initMessaging(didDocument);
     })
 
-    const initMessaging = async (didIdentifier, privateKeys) => {
-        didDoc = await $$.promisify(w3cDID.resolveDID)(didIdentifier);
-        if (privateKeys) {
-            await storeDIDPrivateKeys(privateKeys)
-        }
-        this.messageDispatcher = new MessageDispatcher(didDoc)
+    const initMessaging = async (didDocument) => {
+        this.messageDispatcher = new MessageDispatcher(didDocument)
         this.messageDispatcher.waitForMessages((err, commandObject) => {
             this.execute(err, commandObject);
         });
@@ -66,7 +62,7 @@ function ServerEnclaveProcess(didIdentifier, privateKeys, storageFolder) {
 
 module.exports = ServerEnclaveProcess;
 
-const arguments = process.argv;
-if (arguments.length > 2) {
-    new ServerEnclaveProcess(arguments[2]);
-}
+// const arguments = process.argv;
+// if (arguments.length > 2) {
+//     new ServerEnclaveProcess(arguments[2]);
+// }

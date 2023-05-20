@@ -27,7 +27,7 @@ function RemoteEnclaveBootService(server) {
     this.bootEnclaves = () => {
         const storageFolder = this.getStorageFolder();
 
-        if (!fs.existsSync(path.join(storageFolder, "main"))) {
+
             const keySSISpace = require("opendsu").loadAPI("keyssi");
             const seedSSI = keySSISpace.createSeedSSI("vault", process.env.REMOTE_ENCLAVE_SECRET);
             w3cDID.createIdentity("ssi:key", seedSSI, async (err, didDoc) => {
@@ -40,7 +40,7 @@ function RemoteEnclaveBootService(server) {
                         server.dispatchEvent("error", err);
                         return err;
                     }
-                    this.main = new ServerEnclaveProcess(didDoc.getIdentifier(), didDoc.getPrivateKeys(), didDir);
+                    this.main = new ServerEnclaveProcess(didDoc, didDir);
                     this.main.on("initialised", () => {
                         server.remoteDID = didDoc.getIdentifier();
                         server.initialised = true;
@@ -50,25 +50,23 @@ function RemoteEnclaveBootService(server) {
 
                 }, true)
             });
-            return;
-        }
 
-        this.getDirectories(storageFolder, (err, dirs) => {
-            if (err) {
-                console.log(err);
-                return err;
-            }
-            dirs.forEach(async (dir) => {
-                if (dir === "main") {
-                    this.bootMain(path.join(storageFolder, "main"));
-                    return;
-                }
-                const did = sc.decodeBase58(dir).toString("utf8");
-                const didDocument = await $$.promisify(w3cDID.resolveDID)(did);
-                const child = fork(path.join(__dirname, "./ServerEnclaveProcess.js"), [didDocument.getIdentifier(), undefined, path.join(storageFolder, dir)]);
-                processList[didDocument.getIdentifier()] = child;
-            })
-        })
+        // this.getDirectories(storageFolder, (err, dirs) => {
+        //     if (err) {
+        //         console.log(err);
+        //         return err;
+        //     }
+        //     dirs.forEach(async (dir) => {
+        //         if (dir === "main") {
+        //             this.bootMain(path.join(storageFolder, "main"));
+        //             return;
+        //         }
+        //         const did = sc.decodeBase58(dir).toString("utf8");
+        //         const didDocument = await $$.promisify(w3cDID.resolveDID)(did);
+        //         const child = fork(path.join(__dirname, "./ServerEnclaveProcess.js"), [didDocument, path.join(storageFolder, dir)]);
+        //         processList[didDocument.getIdentifier()] = child;
+        //     })
+        // })
     }
 
     this.bootMain = (mainPath) => {
@@ -106,8 +104,7 @@ function RemoteEnclaveBootService(server) {
     }
 
     this.getStorageFolder = () => {
-        const enclavePath = path.join("external-volumes", "enclave");
-        return path.join(server.serverConfig.rootFolder, enclavePath);
+        return path.resolve(server.serverConfig.rootFolder);
     }
 
     this.getDirectories = (source, callback) => {

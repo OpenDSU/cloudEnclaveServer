@@ -1,19 +1,17 @@
 
-require("../opendsu-sdk/psknode/bundles/testsRuntime");
-const tir = require("../opendsu-sdk/psknode/tests/util/tir");
+require("../../../psknode/bundles/testsRuntime");
+const tir = require("../../../psknode/tests/util/tir");
 
 const dc = require("double-check");
 const assert = dc.assert;
-const acl = require("../acl-magic/index")
 const openDSU = require("opendsu");
-$$.__registerModule("acl-magic", acl)
 
 const scAPI = openDSU.loadApi("sc");
 const w3cDID = openDSU.loadAPI("w3cdid");
 const enclaveAPI = openDSU.loadApi("enclave");
 
 
-const { RemoteEnclaveServer } = require("..");
+const { createInstance } = require("../");
 process.env.REMOTE_ENCLAVE_SECRET = "something";
 
 assert.callback('Create enclave test', (testFinished) => {
@@ -28,7 +26,7 @@ assert.callback('Create enclave test', (testFinished) => {
 
         const domain = "testDomain"
         const apiHub = await tir.launchConfigurableApiHubTestNodeAsync({ domains: [{ name: domain, config: testDomainConfig }] });
-        const server = new RemoteEnclaveServer({rootFolder: folder});
+        const server = createInstance({rootFolder: folder});
         server.start();
 
         server.on("initialised", async() => {
