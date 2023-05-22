@@ -26,30 +26,28 @@ function RemoteEnclaveBootService(server) {
 
     this.bootEnclaves = () => {
         const storageFolder = this.getStorageFolder();
-
-
-            const keySSISpace = require("opendsu").loadAPI("keyssi");
-            const seedSSI = keySSISpace.createSeedSSI("vault", process.env.REMOTE_ENCLAVE_SECRET);
-            w3cDID.createIdentity("ssi:key", seedSSI, async (err, didDoc) => {
+        const keySSISpace = require("opendsu").loadAPI("keyssi");
+        const seedSSI = keySSISpace.createSeedSSI("vault", process.env.REMOTE_ENCLAVE_SECRET);
+        w3cDID.createIdentity("ssi:key", seedSSI, async (err, didDoc) => {
+            if (err) {
+                server.dispatchEvent("error", err);
+                return;
+            }
+            this.createFolderForDID(didDoc.getIdentifier(), (err, didDir) => {
                 if (err) {
                     server.dispatchEvent("error", err);
-                    return;
+                    return err;
                 }
-                this.createFolderForDID(didDoc.getIdentifier(), (err, didDir) => {
-                    if (err) {
-                        server.dispatchEvent("error", err);
-                        return err;
-                    }
-                    this.main = new ServerEnclaveProcess(didDoc, didDir);
-                    this.main.on("initialised", () => {
-                        server.remoteDID = didDoc.getIdentifier();
-                        server.initialised = true;
-                        server.dispatchEvent("initialised", didDoc.getIdentifier());
-                        this.decorateMainEnclave();
-                    })
+                this.main = new ServerEnclaveProcess(didDoc, didDir);
+                this.main.on("initialised", () => {
+                    server.remoteDID = didDoc.getIdentifier();
+                    server.initialised = true;
+                    server.dispatchEvent("initialised", didDoc.getIdentifier());
+                    this.decorateMainEnclave();
+                })
 
-                }, true)
-            });
+            }, true)
+        });
 
         // this.getDirectories(storageFolder, (err, dirs) => {
         //     if (err) {
