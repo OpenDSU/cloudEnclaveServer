@@ -31,7 +31,7 @@ function RemoteEnclaveBootService(server) {
         const mainEnclaveFolderPath = path.join(storageFolder, "main");
         try {
             fs.accessSync(mainEnclaveFolderPath);
-        }catch (e) {
+        } catch (e) {
             return w3cDID.createIdentity("ssi:key", seedSSI, async (err, didDoc) => {
                 if (err) {
                     server.dispatchEvent("error", err);
@@ -44,10 +44,10 @@ function RemoteEnclaveBootService(server) {
                     }
 
                     initMainEnclave(didDoc, didDir);
-
                 })
             });
         }
+
         w3cDID.createIdentity("ssi:key", seedSSI, async (err, didDoc) => {
             if (err) {
                 server.dispatchEvent("error", err);
@@ -60,11 +60,25 @@ function RemoteEnclaveBootService(server) {
 
     const initMainEnclave = (didDocument, didDir) => {
         this.main = new ServerEnclaveProcess(didDocument, didDir);
+        loadLambdas(this.main, didDir);
         this.main.on("initialised", () => {
             server.remoteDID = didDocument.getIdentifier();
             server.initialised = true;
             server.dispatchEvent("initialised", didDocument.getIdentifier());
             this.decorateMainEnclave();
+        })
+    }
+
+    const loadLambdas = (serverEnclaveProcess, lambdasPath) => {
+        fs.readdirSync(lambdasPath).forEach(file => {
+            if(file.endsWith(".js")){
+                const importedObj = require(path.join(lambdasPath, file));
+                for(let prop in importedObj){
+                    if(typeof importedObj[prop] === "function"){
+                        importedObj[prop](serverEnclaveProcess);
+                    }
+                }
+            }
         })
     }
 
@@ -122,7 +136,3 @@ function RemoteEnclaveBootService(server) {
 module.exports = {
     RemoteEnclaveBootService
 };
-
-// delete enclaves
-// secrets in child
-// 

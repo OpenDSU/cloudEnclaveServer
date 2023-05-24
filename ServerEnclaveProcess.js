@@ -23,7 +23,6 @@ function ServerEnclaveProcess(didDocument, storageFolder) {
         this.dispatchEvent("initialised");
     }
 
-
     const storeDIDPrivateKeys = (privateKeys) => {
         return Promise.all(privateKeys
             .map(key => {
@@ -61,8 +60,3 @@ function ServerEnclaveProcess(didDocument, storageFolder) {
 }
 
 module.exports = ServerEnclaveProcess;
-
-// const arguments = process.argv;
-// if (arguments.length > 2) {
-//     new ServerEnclaveProcess(arguments[2]);
-// }

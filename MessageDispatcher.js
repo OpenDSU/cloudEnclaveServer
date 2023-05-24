@@ -1,8 +1,6 @@
 function MessageDispatcher(didDocument) {
-    const didDoc = didDocument;
-
     this.waitForMessages = (callback) => {
-        didDoc.waitForMessages((err, res) => {
+        didDocument.subscribe((err, res) => {
             if (err) {
                 callback(err);
                 return
@@ -13,7 +11,8 @@ function MessageDispatcher(didDocument) {
     };
 
     this.sendMessage = (result, clientDID) => {
-        didDoc.sendMessage(result, clientDID, (err, res) => {
+        didDocument.sendMessage(result, clientDID, (err, res) => {
+            console.log("Message sent to client", err, res)
             if (err) {
                 console.log(err);
             }
