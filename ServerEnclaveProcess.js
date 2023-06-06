@@ -1,10 +1,10 @@
 const {MessageDispatcher} = require("./MessageDispatcher");
 const ServerEnclave = require("./ServerEnclave");
+
 const openDSU = require("opendsu");
 const utils = openDSU.loadAPI("utils");
 const ObservableMixin = utils.ObservableMixin;
 const scAPI = openDSU.loadAPI("sc");
-const w3cDID = openDSU.loadAPI("w3cdid");
 
 function ServerEnclaveProcess(didDocument, storageFolder) {
     const enclave = new ServerEnclave(didDocument, storageFolder);
@@ -47,6 +47,7 @@ function ServerEnclaveProcess(didDocument, storageFolder) {
                 this.messageDispatcher.sendMessage(JSON.stringify(resultObj), clientDID);
             }
             params.push(callback);
+            enclave.name = this.name;
             enclave[command].apply(enclave, params);
         } catch (err) {
             console.log(err);
