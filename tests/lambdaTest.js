@@ -47,9 +47,14 @@ assert.callback('Lambda test', (testFinished) => {
             rootFolder: folder
         });
         const serverDID = await tir.launchConfigurableRemoteEnclaveTestNodeAsync({
-            rootFolder: folder,
             domain,
-            apiHubPort: apiHub.port
+            apihubPort: apiHub.port,
+            config: {
+                rootFolder: folder,
+                secret: "testSecret",
+                lambdas: path.join(folder,"main"),
+                name: "lamdasEnclave"
+            }
         });
 
         try {

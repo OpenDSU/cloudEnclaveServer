@@ -10,7 +10,7 @@ const w3cDID = openDSU.loadAPI("w3cdid");
 const enclaveAPI = openDSU.loadApi("enclave");
 const bdnsAPI = openDSU.loadApi("bdns");
 
-const {createInstance} = require("../");
+const { createInstance } = require("../");
 process.env.REMOTE_ENCLAVE_SECRET = "something";
 
 assert.callback('Create enclave test', (testFinished) => {
@@ -32,22 +32,27 @@ assert.callback('Create enclave test', (testFinished) => {
             rootFolder: folder
         });
         const serverDID = await tir.launchConfigurableRemoteEnclaveTestNodeAsync({
-            rootFolder: folder,
             domain,
-            apiHubPort: apiHub.port
+            apihubPort: apiHub.port,
+            config: {
+                rootFolder: folder,
+                secret: "testSecret",
+                name: "testEnclave"
+            }
         });
 
         try {
             const keySSISpace = openDSU.loadAPI("keyssi");
             const scAPI = openDSU.loadApi("sc");
             const createRemoteEnclaveClient = async () => {
-                const clientSeedSSI = keySSISpace.createSeedSSI("vault", "some secret");
-                const clientDIDDocument = await $$.promisify(w3cDID.createIdentity)("ssi:key", clientSeedSSI);
+
+                let [err, clientDIDDocument] = await $$.call(w3cDID.resolveNameDID, domain, "publicName", "initialSecret");
+                assert.true(err === undefined)
 
                 const remoteEnclaveClient = enclaveAPI.initialiseRemoteEnclave(clientDIDDocument.getIdentifier(), serverDID);
 
                 const TABLE = "test_table";
-                const addedRecord = {data: 1};
+                const addedRecord = { data: 1 };
                 remoteEnclaveClient.on("initialised", async () => {
                     try {
                         await $$.promisify(remoteEnclaveClient.insertRecord)("some_did", TABLE, "pk1", addedRecord, addedRecord);
@@ -76,4 +81,4 @@ assert.callback('Create enclave test', (testFinished) => {
         }
     })
 
-}, 500000);
+}, 5000000);

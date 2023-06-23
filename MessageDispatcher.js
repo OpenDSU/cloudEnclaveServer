@@ -11,12 +11,18 @@ function MessageDispatcher(didDocument) {
     };
 
     this.sendMessage = (result, clientDID) => {
-        didDocument.sendMessage(result, clientDID, (err, res) => {
-            console.log("Message sent to client", err, res)
+        const opendsu = require("opendsu");
+        opendsu.loadApi("w3cdid").resolveDID(clientDID, (err, clientDIDDocument) => {
             if (err) {
-                console.log(err);
+                return console.log(err);
             }
-        })
+            didDocument.sendMessage(result, clientDIDDocument, (err, res) => {
+                console.log(`Message :${result} sent to ${didDocument.getIdentifier()} client`)
+                if (err) {
+                    console.log(err);
+                }
+            })
+        });
     };
 }
 
