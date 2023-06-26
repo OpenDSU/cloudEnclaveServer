@@ -59,21 +59,33 @@ function RemoteEnclaveBootService(server) {
     }
 
     const initMainEnclave = (didDocument, didDir) => {
-        this.main = new ServerEnclaveProcess(didDocument, didDir);
-        loadLambdas(this.main, server);
-        this.main.on("initialised", () => {
-            this.main.name = server.serverConfig.name;
-            server.remoteDID = didDocument.getIdentifier();
-            if (server.serverConfig.auditDID !== undefined) {
-                initAudit(server.remoteDID, server.serverConfig.auditDID);
-            }
-            else {
-                server.initialised = true;
-                server.dispatchEvent("initialised", didDocument.getIdentifier());
-                this.decorateMainEnclave();
-            }
 
-        })
+        console.log("Initialising main enclave ", didDir);
+
+        this.main = new ServerEnclaveProcess(didDocument, didDir);
+        this.didDocument = didDocument;
+        loadLambdas(this.main, server);
+        if (this.main.initialised) {
+            finishInit();
+        }
+        else {
+            this.main.on("initialised", finishInit)
+        }
+    }
+
+    const finishInit = () => {
+        console.log("Main enclave process initialised");
+        this.main.name = server.serverConfig.name;
+        server.remoteDID = this.didDocument.getIdentifier();
+        if (server.serverConfig.auditDID !== undefined) {
+            initAudit(server.remoteDID, server.serverConfig.auditDID);
+        }
+        else {
+            server.initialised = true;
+            server.dispatchEvent("initialised", this.didDocument.getIdentifier());
+            console.log("Initialised event dispatched");
+            this.decorateMainEnclave();
+        }
     }
 
     const initAudit = async (currentDID, auditDID) => {
@@ -84,7 +96,7 @@ function RemoteEnclaveBootService(server) {
         auditClient.on("initialised", () => {
             this.main.auditClient = auditClient;
             this.main.addEnclaveMethod("audit", (...args) => {
-                auditClient.callLambda("addAudit", ...args, server.serverConfig.name, ()=>{});
+                auditClient.callLambda("addAudit", ...args, server.serverConfig.name, () => { });
             })
             server.initialised = true;
             server.dispatchEvent("initialised", currentDID);
@@ -136,7 +148,7 @@ function RemoteEnclaveBootService(server) {
     }
 
     this.createFolderForMainEnclave = (folderPath, callback) => {
-        fs.mkdir(folderPath, {recursive: true}, (err) => {
+        fs.mkdir(folderPath, { recursive: true }, (err) => {
             if (err) {
                 return callback(err);
             }
@@ -149,7 +161,7 @@ function RemoteEnclaveBootService(server) {
     }
 
     this.getDirectories = (source, callback) => {
-        fs.readdir(source, {withFileTypes: true}, (err, files) => {
+        fs.readdir(source, { withFileTypes: true }, (err, files) => {
             if (err) {
                 callback(err)
             } else {

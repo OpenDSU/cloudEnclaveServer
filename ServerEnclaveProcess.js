@@ -1,4 +1,4 @@
-const {MessageDispatcher} = require("./MessageDispatcher");
+const { MessageDispatcher } = require("./MessageDispatcher");
 const ServerEnclave = require("./ServerEnclave");
 
 const openDSU = require("opendsu");
@@ -11,15 +11,14 @@ function ServerEnclaveProcess(didDocument, storageFolder) {
     let didDoc;
     const sc = scAPI.getSecurityContext(enclave);
     ObservableMixin(this);
-    sc.on("initialised", () => {
-        initMessaging(didDocument);
-    })
 
     const initMessaging = async (didDocument) => {
         this.messageDispatcher = new MessageDispatcher(didDocument)
         this.messageDispatcher.waitForMessages((err, commandObject) => {
             this.execute(err, commandObject);
         });
+        console.log("Dispatching initialised event from server enclave process");
+        this.initialised = true;
         this.dispatchEvent("initialised");
     }
 
@@ -36,6 +35,7 @@ function ServerEnclaveProcess(didDocument, storageFolder) {
             return;
         }
         const clientDID = commandObject.params.pop();
+        console.log("Preparing to execute message for " + clientDID);
         try {
             const command = commandObject.commandName;
             const params = commandObject.params;
@@ -57,6 +57,16 @@ function ServerEnclaveProcess(didDocument, storageFolder) {
 
     this.addEnclaveMethod = (methodName, method) => {
         enclave[methodName] = method;
+    }
+
+    if (sc.isInitialised()) {
+        console.log("Security context already initialised");
+        initMessaging(didDocument);
+    } else {
+        sc.on("initialised", () => {
+            console.log("Security context was initialised");
+            initMessaging(didDocument);
+        })
     }
 }
 
