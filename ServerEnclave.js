@@ -14,7 +14,7 @@ function ServerEnclave(didDocument, storageFolder) {
     }
 
     this.getEnclaveType = () => {
-        return "RemoteEnclave";
+        return "CloudEnclave";
     }
 
     isInitialised = () => {

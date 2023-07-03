@@ -46,7 +46,7 @@ assert.callback('Create accounting enclave test', (testFinished) => {
                 config: {
                     rootFolder: folder,
                     secret: sendSecret,
-                    lambdas: "./opendsu-sdk/modules/remote-enclave/tests/lambdaExamples/send",
+                    lambdas: "./opendsu-sdk/modules/cloud-enclave/tests/lambdaExamples/send",
                     name: "send"
                 }
             });
@@ -58,7 +58,7 @@ assert.callback('Create accounting enclave test', (testFinished) => {
                 config: {
                     rootFolder: folder,
                     secret: receiveSecret,
-                    lambdas: "./opendsu-sdk/modules/remote-enclave/tests/lambdaExamples/receive",
+                    lambdas: "./opendsu-sdk/modules/cloud-enclave/tests/lambdaExamples/receive",
                     name: "receive"
                 }
             });

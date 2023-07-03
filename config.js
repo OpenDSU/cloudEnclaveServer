@@ -1,3 +1,3 @@
 module.exports = config = {
-    rootFolder: "../remote-enclave-root",
+    rootFolder: "../cloud-enclave-root",
 }
