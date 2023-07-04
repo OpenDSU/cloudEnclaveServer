@@ -32,7 +32,7 @@ function RemoteEnclaveBootService(server) {
         try {
             fs.accessSync(mainEnclaveFolderPath);
         } catch (e) {
-            return w3cDID.resolveNameDID(process.env.REMOTE_ENCLAVE_DOMAIN, server.serverConfig.name, process.env.REMOTE_ENCLAVE_SECRET, async (err, didDoc) => {
+            return w3cDID.resolveNameDID(process.env.CLOUD_ENCLAVE_DOMAIN, server.serverConfig.name, process.env.CLOUD_ENCLAVE_SECRET, async (err, didDoc) => {
                 if (err) {
                     server.dispatchEvent("error", err);
                     return;
@@ -48,7 +48,7 @@ function RemoteEnclaveBootService(server) {
             });
         }
 
-        w3cDID.resolveNameDID(process.env.REMOTE_ENCLAVE_DOMAIN, server.serverConfig.name, process.env.REMOTE_ENCLAVE_SECRET, async (err, didDoc) => {
+        w3cDID.resolveNameDID(process.env.CLOUD_ENCLAVE_DOMAIN, server.serverConfig.name, process.env.CLOUD_ENCLAVE_SECRET, async (err, didDoc) => {
             if (err) {
                 server.dispatchEvent("error", err);
                 return;

@@ -11,7 +11,7 @@ const enclaveAPI = openDSU.loadApi("enclave");
 
 
 const {RemoteEnclaveServer} = require("..");
-process.env.REMOTE_ENCLAVE_SECRET = "something";
+process.env.CLOUD_ENCLAVE_SECRET = "something";
 
 assert.callback('Lambda test', (testFinished) => {
     dc.createTestFolder('createDSU', async (err, folder) => {
