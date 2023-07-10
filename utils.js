@@ -1,7 +1,7 @@
 const getLokiEnclaveFacade = (pth) => {
     if(typeof $$.LokiEnclaveFacade === "undefined"){
-        const LokiEnclaveFacade = require("loki-enclave-facade");
-        const lokiEnclaveFacadeInstance = new LokiEnclaveFacade(pth);
+        const lokiEnclaveFacadeModule = require("loki-enclave-facade");
+        const lokiEnclaveFacadeInstance = lokiEnclaveFacadeModule.createLokiEnclaveFacadeInstance(pth);
         const wrappedEnclaveFacade = {};
         for(let methodName in lokiEnclaveFacadeInstance){
             wrappedEnclaveFacade[methodName] = (...args)=>{
