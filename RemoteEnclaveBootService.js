@@ -29,32 +29,44 @@ function RemoteEnclaveBootService(server) {
     this.bootEnclaves = () => {
         const storageFolder = this.getStorageFolder();
         const mainEnclaveFolderPath = path.join(storageFolder, "main");
-        try {
-            fs.accessSync(mainEnclaveFolderPath);
-        } catch (e) {
-            return w3cDID.resolveNameDID(process.env.CLOUD_ENCLAVE_DOMAIN, server.serverConfig.name, process.env.CLOUD_ENCLAVE_SECRET, async (err, didDoc) => {
+
+        const _boot = () => {
+            try {
+                fs.accessSync(mainEnclaveFolderPath);
+            } catch (e) {
+                return w3cDID.resolveNameDID(process.env.CLOUD_ENCLAVE_DOMAIN, server.serverConfig.name, process.env.CLOUD_ENCLAVE_SECRET, async (err, didDoc) => {
+                    if (err) {
+                        server.dispatchEvent("error", err);
+                        return;
+                    }
+                    this.createFolderForMainEnclave(mainEnclaveFolderPath, (err, didDir) => {
+                        if (err) {
+                            server.dispatchEvent("error", err);
+                            return err;
+                        }
+
+                        initMainEnclave(didDoc, didDir);
+                    })
+                });
+            }
+
+            w3cDID.resolveNameDID(process.env.CLOUD_ENCLAVE_DOMAIN, server.serverConfig.name, process.env.CLOUD_ENCLAVE_SECRET, async (err, didDoc) => {
                 if (err) {
                     server.dispatchEvent("error", err);
                     return;
                 }
-                this.createFolderForMainEnclave(mainEnclaveFolderPath, (err, didDir) => {
-                    if (err) {
-                        server.dispatchEvent("error", err);
-                        return err;
-                    }
 
-                    initMainEnclave(didDoc, didDir);
-                })
+                initMainEnclave(didDoc, mainEnclaveFolderPath);
             });
         }
 
-        w3cDID.resolveNameDID(process.env.CLOUD_ENCLAVE_DOMAIN, server.serverConfig.name, process.env.CLOUD_ENCLAVE_SECRET, async (err, didDoc) => {
-            if (err) {
-                server.dispatchEvent("error", err);
-                return;
-            }
-
-            initMainEnclave(didDoc, mainEnclaveFolderPath);
+        const scApi = require("opendsu").loadApi("sc");
+        const sc = scApi.getSecurityContext();
+        if (sc.isInitialised()) {
+            return _boot();
+        }
+        sc.on("initialised", () => {
+            _boot();
         });
     }
 
