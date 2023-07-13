@@ -6,7 +6,7 @@ const utils = openDSU.loadAPI("utils");
 const ObservableMixin = utils.ObservableMixin;
 const scAPI = openDSU.loadAPI("sc");
 
-function ServerEnclaveProcess(didDocument, storageFolder) {
+function CloudEnclaveServer(didDocument, storageFolder) {
     const enclave = new ServerEnclave(didDocument, storageFolder);
     let didDoc;
     const sc = scAPI.getSecurityContext(enclave);
@@ -70,4 +70,4 @@ function ServerEnclaveProcess(didDocument, storageFolder) {
     }
 }
 
-module.exports = ServerEnclaveProcess;
+module.exports = CloudEnclaveServer;
