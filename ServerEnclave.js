@@ -17,7 +17,7 @@ function ServerEnclave(didDocument, storageFolder) {
         return "CloudEnclave";
     }
 
-    isInitialised = () => {
+    this.isInitialised = () => {
         return true;
     };
 }

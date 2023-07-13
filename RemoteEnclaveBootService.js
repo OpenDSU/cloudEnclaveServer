@@ -6,7 +6,7 @@ const enclaveAPI = openDSU.loadAPI("enclave");
 const path = require("path");
 const fs = require("fs");
 const sc = openDSU.loadAPI("crypto");
-const ServerEnclaveProcess = require("./ServerEnclaveProcess");
+const ServerEnclaveProcess = require("./CloudEnclaveServer");
 
 function RemoteEnclaveBootService(server) {
     const processList = {}
