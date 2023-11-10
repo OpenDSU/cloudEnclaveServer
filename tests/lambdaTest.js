@@ -10,7 +10,7 @@ const w3cDID = openDSU.loadAPI("w3cdid");
 const enclaveAPI = openDSU.loadApi("enclave");
 
 
-const {RemoteEnclaveServer} = require("..");
+const {CloudEnclaveServer} = require("..");
 process.env.CLOUD_ENCLAVE_SECRET = "something";
 
 assert.callback('Lambda test', (testFinished) => {
@@ -31,13 +31,13 @@ assert.callback('Lambda test', (testFinished) => {
             "}\n" +
             "\n" +
             "module.exports = {\n" +
-            "    registerLambdas: function (remoteEnclaveServer) {\n" +
-            "        remoteEnclaveServer.addEnclaveMethod(\"testLambda\", fn, \"read\");\n" +
+            "    registerLambdas: function (cloudEnclaveServer) {\n" +
+            "        cloudEnclaveServer.addEnclaveMethod(\"testLambda\", fn, \"read\");\n" +
             "    }\n" +
             "}"
 
-        fs.mkdirSync(path.join(folder,"main"), {recursive: true});
-        fs.writeFileSync(path.join(folder,"main", "lambda.js"), lambdaDefinition);
+        fs.mkdirSync(path.join(folder, "main"), {recursive: true});
+        fs.writeFileSync(path.join(folder, "main", "lambda.js"), lambdaDefinition);
         const domain = "vault";
         const apiHub = await tir.launchConfigurableApiHubTestNodeAsync({
             domains: [{
@@ -46,30 +46,32 @@ assert.callback('Lambda test', (testFinished) => {
             }],
             rootFolder: folder
         });
-        const serverDID = await tir.launchConfigurableRemoteEnclaveTestNodeAsync({
+        const serverDID = await tir.launchConfigurableCloudEnclaveTestNodeAsync({
             domain,
             apihubPort: apiHub.port,
-            config: {
-                rootFolder: folder,
-                secret: "testSecret",
-                lambdas: path.join(folder,"main"),
-                name: "lamdasEnclave"
-            }
+            rootFolder: folder,
+            secret: "testSecret",
+            lambdas: path.join(folder, "main"),
+            name: "lambdasEnclave"
+
         });
 
         try {
             const keySSISpace = openDSU.loadAPI("keyssi");
             const scAPI = openDSU.loadApi("sc");
-            const createRemoteEnclaveClient = async () => {
+            const createCloudEnclaveClient = async () => {
                 const clientSeedSSI = keySSISpace.createSeedSSI("vault", "some secret");
                 const clientDIDDocument = await $$.promisify(w3cDID.createIdentity)("ssi:key", clientSeedSSI);
 
-                const remoteEnclaveClient = enclaveAPI.initialiseRemoteEnclave(clientDIDDocument.getIdentifier(), serverDID);
-                remoteEnclaveClient.on("initialised", async () => {
-                    remoteEnclaveClient.callLambda("testLambda", "param1", "param2", (err, result) => {
-                        console.log(err, result);
+                const cloudEnclaveClient = enclaveAPI.initialiseCloudEnclaveClient(clientDIDDocument.getIdentifier(), serverDID);
+                cloudEnclaveClient.on("initialised", async () => {
+                    cloudEnclaveClient.callLambda("testLambda", "param1", "param2", (err, result) => {
                         assert.true(err === undefined, "Lambda call failed");
-                        assert.equal(`["param1","param2"]`, result, "Lambda result is not as expected");
+                        assert.true(result !== undefined, "Lambda result is undefined");
+                        assert.true(result instanceof Array, "Lambda result is not an array");
+                        assert.true(result.length === 2, "Lambda result is not an array with 2 elements");
+                        assert.true(result[0] === "param1", "Lambda result is not as expected");
+                        assert.true(result[1] === "param2", "Lambda result is not as expected");
                         testFinished();
                     })
                 });
@@ -77,10 +79,10 @@ assert.callback('Lambda test', (testFinished) => {
 
             const sc = scAPI.getSecurityContext();
             if (sc.isInitialised()) {
-                return await createRemoteEnclaveClient();
+                return await createCloudEnclaveClient();
             }
             sc.on("initialised", async () => {
-                await createRemoteEnclaveClient();
+                await createCloudEnclaveClient();
             });
 
         } catch (e) {

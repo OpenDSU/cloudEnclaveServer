@@ -8,7 +8,7 @@ const fs = require("fs");
 const sc = openDSU.loadAPI("crypto");
 const ServerEnclaveProcess = require("./CloudEnclaveServer");
 
-function RemoteEnclaveBootService(server) {
+function CloudEnclaveBootService(server) {
     const processList = {}
 
     this.createEnclave = async (req, res) => {
@@ -189,5 +189,5 @@ function RemoteEnclaveBootService(server) {
 
 
 module.exports = {
-    RemoteEnclaveBootService
+    CloudEnclaveBootService
 };
