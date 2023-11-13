@@ -5,9 +5,8 @@ const EnclaveMixin = enclaveAPI.EnclaveMixin;
 
 function ServerEnclave(didDocument, storageFolder) {
     EnclaveMixin(this, didDocument, undefined);
-    this.storageDB = getLokiEnclaveFacade(require("path").join(storageFolder, "enclave"));
-
-    const initialised = true;
+    const lokiEnclaveFacadeInstance = getLokiEnclaveFacade(require("path").join(storageFolder, "enclave"));
+    Object.assign(this, lokiEnclaveFacadeInstance);
 
     this.getKeySSI = (callback) => {
         return callback(undefined, undefined);

@@ -65,14 +65,17 @@ assert.callback('Lambda test', (testFinished) => {
 
                 const cloudEnclaveClient = enclaveAPI.initialiseCloudEnclaveClient(clientDIDDocument.getIdentifier(), serverDID);
                 cloudEnclaveClient.on("initialised", async () => {
-                    cloudEnclaveClient.callLambda("testLambda", "param1", "param2", (err, result) => {
-                        assert.true(err === undefined, "Lambda call failed");
-                        assert.true(result !== undefined, "Lambda result is undefined");
-                        assert.true(result instanceof Array, "Lambda result is not an array");
-                        assert.true(result.length === 2, "Lambda result is not an array with 2 elements");
-                        assert.true(result[0] === "param1", "Lambda result is not as expected");
-                        assert.true(result[1] === "param2", "Lambda result is not as expected");
-                        testFinished();
+                    cloudEnclaveClient.grantExecutionAccess(clientDIDDocument.getIdentifier(), (err) => {
+                        assert.true(err === undefined, "Grant execution access failed")
+                        cloudEnclaveClient.callLambda("testLambda", "param1", "param2", (err, result) => {
+                            assert.true(err === undefined, "Lambda call failed");
+                            assert.true(result !== undefined, "Lambda result is undefined");
+                            assert.true(result instanceof Array, "Lambda result is not an array");
+                            assert.true(result.length === 2, "Lambda result is not an array with 2 elements");
+                            assert.true(result[0] === "param1", "Lambda result is not as expected");
+                            assert.true(result[1] === "param2", "Lambda result is not as expected");
+                            testFinished();
+                        })
                     })
                 });
             }
