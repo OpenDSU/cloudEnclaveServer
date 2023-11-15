@@ -1,15 +1,12 @@
-const { MessageDispatcher } = require("./MessageDispatcher");
-const ServerEnclave = require("./ServerEnclave");
+function CloudEnclave(didDocument, securityDecorator, storageFolder) {
+    const { MessageDispatcher } = require("./MessageDispatcher");
+    const openDSU = require("opendsu");
+    const utils = openDSU.loadAPI("utils");
+    const ObservableMixin = utils.ObservableMixin;
+    const scAPI = openDSU.loadAPI("sc");
 
-const openDSU = require("opendsu");
-const utils = openDSU.loadAPI("utils");
-const ObservableMixin = utils.ObservableMixin;
-const scAPI = openDSU.loadAPI("sc");
-
-function CloudEnclaveServer(didDocument, storageFolder) {
-    const enclave = new ServerEnclave(didDocument, storageFolder);
     let didDoc;
-    const sc = scAPI.getSecurityContext(enclave);
+    const sc = scAPI.getSecurityContext();
     ObservableMixin(this);
 
     const initMessaging = async (didDocument) => {
@@ -17,7 +14,7 @@ function CloudEnclaveServer(didDocument, storageFolder) {
         this.messageDispatcher.waitForMessages((err, commandObject) => {
             this.execute(err, commandObject);
         });
-        console.log("Dispatching initialised event from server enclave process");
+        console.log("Dispatching initialised event from server securityDecorator process");
         this.initialised = true;
         this.dispatchEvent("initialised");
     }
@@ -25,7 +22,7 @@ function CloudEnclaveServer(didDocument, storageFolder) {
     const storeDIDPrivateKeys = (privateKeys) => {
         return Promise.all(privateKeys
             .map(key => {
-                return $$.promisify(enclave.addPrivateKeyForDID)(didDoc, key)
+                return $$.promisify(securityDecorator.addPrivateKeyForDID)(didDoc, key)
             }));
     }
 
@@ -47,8 +44,7 @@ function CloudEnclaveServer(didDocument, storageFolder) {
                 this.messageDispatcher.sendMessage(JSON.stringify(resultObj), clientDID);
             }
             params.push(callback);
-            enclave.name = this.name;
-            enclave[command].apply(enclave, params);
+            securityDecorator[command].apply(securityDecorator, params);
         } catch (err) {
             console.log(err);
             return err;
@@ -56,7 +52,7 @@ function CloudEnclaveServer(didDocument, storageFolder) {
     }
 
     this.addEnclaveMethod = (methodName, method) => {
-        enclave[methodName] = method;
+        securityDecorator[methodName] = method;
     }
 
     if (sc.isInitialised()) {
@@ -70,4 +66,4 @@ function CloudEnclaveServer(didDocument, storageFolder) {
     }
 }
 
-module.exports = CloudEnclaveServer;
+module.exports = CloudEnclave;

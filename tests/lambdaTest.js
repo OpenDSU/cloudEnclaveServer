@@ -13,6 +13,12 @@ const enclaveAPI = openDSU.loadApi("enclave");
 const {CloudEnclaveServer} = require("..");
 process.env.CLOUD_ENCLAVE_SECRET = "something";
 
+// 3 zones: read, write, admin
+// each did is part of one or multiple zones
+// a lambda name is a resource in acl-magic
+// a lambda can be called by a did if the did is part of the zone that has access to the resource
+// a lambda has a forDID as first argument
+
 assert.callback('Lambda test', (testFinished) => {
     dc.createTestFolder('createDSU', async (err, folder) => {
         const testDomainConfig = {
@@ -53,7 +59,6 @@ assert.callback('Lambda test', (testFinished) => {
             secret: "testSecret",
             lambdas: path.join(folder, "main"),
             name: "lambdasEnclave"
-
         });
 
         try {

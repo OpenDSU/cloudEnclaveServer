@@ -6,11 +6,10 @@ const enclaveAPI = openDSU.loadAPI("enclave");
 const path = require("path");
 const fs = require("fs");
 const sc = openDSU.loadAPI("crypto");
-const ServerEnclaveProcess = require("./CloudEnclaveServer");
+const CloudEnclave = require("./CloudEnclave");
 
 function CloudEnclaveBootService(server) {
     const processList = {}
-
     this.createEnclave = async (req, res) => {
         const adminDID = req.params.adminDID;
         const key = require('crypto').randomBytes(16).toString("base64")
@@ -74,13 +73,12 @@ function CloudEnclaveBootService(server) {
 
         console.log("Initialising main enclave ", didDir);
 
-        this.main = new ServerEnclaveProcess(didDocument, didDir);
+        this.main = new CloudEnclave(didDocument, didDir);
         this.didDocument = didDocument;
         loadLambdas(this.main, server);
         if (this.main.initialised) {
             finishInit();
-        }
-        else {
+        } else {
             this.main.on("initialised", finishInit)
         }
     }
@@ -91,12 +89,10 @@ function CloudEnclaveBootService(server) {
         server.remoteDID = this.didDocument.getIdentifier();
         if (server.serverConfig.auditDID !== undefined) {
             initAudit(server.remoteDID, server.serverConfig.auditDID);
-        }
-        else {
+        } else {
             server.initialised = true;
             server.dispatchEvent("initialised", this.didDocument.getIdentifier());
             console.log("Initialised event dispatched");
-            this.decorateMainEnclave();
         }
     }
 
@@ -108,11 +104,11 @@ function CloudEnclaveBootService(server) {
         auditClient.on("initialised", () => {
             this.main.auditClient = auditClient;
             this.main.addEnclaveMethod("audit", (...args) => {
-                auditClient.callLambda("addAudit", ...args, server.serverConfig.name, () => { });
+                auditClient.callLambda("addAudit", ...args, server.serverConfig.name, () => {
+                });
             })
             server.initialised = true;
             server.dispatchEvent("initialised", currentDID);
-            this.decorateMainEnclave();
         })
 
     }
@@ -130,11 +126,9 @@ function CloudEnclaveBootService(server) {
                     }
                 }
             })
-        }
-        catch (err) {
+        } catch (err) {
             server.dispatchEvent("error", err);
         }
-
     }
 
     this.bootMain = (mainPath) => {
@@ -145,22 +139,17 @@ function CloudEnclaveBootService(server) {
             }
 
             const didIdentifier = sc.decodeBase58(dirs[0]).toString("utf8");
-            this.main = new ServerEnclaveProcess(didIdentifier, undefined, path.join(mainPath, dirs[0]));
+            this.main = new CloudEnclave(didIdentifier, undefined, path.join(mainPath, dirs[0]));
             this.main.on("initialised", () => {
                 server.remoteDID = didIdentifier;
                 server.initialised = true;
                 server.dispatchEvent("initialised");
-                this.decorateMainEnclave();
             })
         })
     }
 
-    this.decorateMainEnclave = () => {
-
-    }
-
     this.createFolderForMainEnclave = (folderPath, callback) => {
-        fs.mkdir(folderPath, { recursive: true }, (err) => {
+        fs.mkdir(folderPath, {recursive: true}, (err) => {
             if (err) {
                 return callback(err);
             }
@@ -173,7 +162,7 @@ function CloudEnclaveBootService(server) {
     }
 
     this.getDirectories = (source, callback) => {
-        fs.readdir(source, { withFileTypes: true }, (err, files) => {
+        fs.readdir(source, {withFileTypes: true}, (err, files) => {
             if (err) {
                 callback(err)
             } else {

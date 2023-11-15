@@ -7,9 +7,10 @@ function CloudEnclaveServer(config) {
     const openDSU = require("opendsu");
     const utils = openDSU.loadAPI("utils");
     const ObservableMixin = utils.ObservableMixin;
-    this.enclaveHandler = new CloudEnclaveBootService(this);
     this.serverConfig = config;
     this.initialised = false;
+
+    this.enclaveHandler = new CloudEnclaveBootService(this);
     ObservableMixin(this);
 
     this.start = () => {
