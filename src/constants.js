@@ -10,5 +10,8 @@ module.exports = {
         READ: "read",
         WRITE: "write",
         ADMIN: "admin"
+    },
+    PERSISTENCE_TYPES: {
+        LOKI: "loki"
     }
 };

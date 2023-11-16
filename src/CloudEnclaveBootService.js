@@ -6,10 +6,14 @@ const enclaveAPI = openDSU.loadAPI("enclave");
 const path = require("path");
 const fs = require("fs");
 const sc = openDSU.loadAPI("crypto");
-const CloudEnclave = require("./CloudEnclave");
 
 function CloudEnclaveBootService(server) {
     const processList = {}
+    const PersistenceRegistry = require("./PersistenceRegistry");
+    const persistence = PersistenceRegistry.get(server.serverConfig.persistence.type)(...server.serverConfig.persistence.options);
+    const SecurityDecorator = require("./SecurityDecorator");
+    const CloudEnclave = require("./CloudEnclave");
+
     this.createEnclave = async (req, res) => {
         const adminDID = req.params.adminDID;
         const key = require('crypto').randomBytes(16).toString("base64")
@@ -38,14 +42,7 @@ function CloudEnclaveBootService(server) {
                         server.dispatchEvent("error", err);
                         return;
                     }
-                    this.createFolderForMainEnclave(mainEnclaveFolderPath, (err, didDir) => {
-                        if (err) {
-                            server.dispatchEvent("error", err);
-                            return err;
-                        }
-
-                        initMainEnclave(didDoc, didDir);
-                    })
+                    initMainEnclave(didDoc);
                 });
             }
 
@@ -55,7 +52,7 @@ function CloudEnclaveBootService(server) {
                     return;
                 }
 
-                initMainEnclave(didDoc, mainEnclaveFolderPath);
+                initMainEnclave(didDoc);
             });
         }
 
@@ -69,11 +66,9 @@ function CloudEnclaveBootService(server) {
         });
     }
 
-    const initMainEnclave = (didDocument, didDir) => {
-
-        console.log("Initialising main enclave ", didDir);
-
-        this.main = new CloudEnclave(didDocument, didDir);
+    const initMainEnclave = (didDocument) => {
+        const securityDecorator = new SecurityDecorator(persistence);
+        this.main = new CloudEnclave(didDocument, securityDecorator);
         this.didDocument = didDocument;
         loadLambdas(this.main, server);
         if (this.main.initialised) {

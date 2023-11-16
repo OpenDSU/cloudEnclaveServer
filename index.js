@@ -9,7 +9,6 @@ function CloudEnclaveServer(config) {
     const ObservableMixin = utils.ObservableMixin;
     this.serverConfig = config;
     this.initialised = false;
-
     this.enclaveHandler = new CloudEnclaveBootService(this);
     ObservableMixin(this);
 

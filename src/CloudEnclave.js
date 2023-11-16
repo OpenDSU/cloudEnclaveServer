@@ -1,4 +1,4 @@
-function CloudEnclave(didDocument, securityDecorator, storageFolder) {
+function CloudEnclave(didDocument, securityDecorator) {
     const { MessageDispatcher } = require("./MessageDispatcher");
     const openDSU = require("opendsu");
     const utils = openDSU.loadAPI("utils");
