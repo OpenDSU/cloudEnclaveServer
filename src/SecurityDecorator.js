@@ -1,5 +1,5 @@
-// 3 concerns: read, write, admin
-// each did is a zone
+// 3 zones: read, write, admin
+// each did is a child zone for the read, write and/or admin zones
 // a lambda name is a resource in acl-magic
 // a lambda can be called by a did if the did is part of the zone that has access to the resource
 // a lambda has a forDID as first argument
@@ -11,7 +11,7 @@ function SecurityDecorator(enclave) {
     this.grantReadAccess = (forDID, resource, callback) => {
         persistence.addZoneParent(forDID, accessControlModes.READ, err => {
             if (err) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to grant read access to ${forDID} for resource ${resource}`, err));
+                return callback(createOpenDSUErrorWrapper(`Failed to grant read access to ${forDID} for resource ${resource}`, err));
             }
 
             persistence.grant(accessControlModes.READ, forDID, resource, callback);
@@ -21,7 +21,7 @@ function SecurityDecorator(enclave) {
     this.hasReadAccess = (forDID, resource, callback) => {
         persistence.loadResourceDirectGrants(accessControlModes.READ, resource, (err, grants) => {
             if (err) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to load direct grants for resource ${resource}`, err));
+                return callback(createOpenDSUErrorWrapper(`Failed to load direct grants for resource ${resource}`, err));
             }
 
             if (grants.indexOf(forDID) !== -1) {
@@ -35,7 +35,7 @@ function SecurityDecorator(enclave) {
     this.revokeReadAccess = (forDID, resource, callback) => {
         persistence.delZoneParent(forDID, accessControlModes.READ, err => {
             if (err) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to revoke read access to ${forDID} for resource ${resource}`, err));
+                return callback(createOpenDSUErrorWrapper(`Failed to revoke read access to ${forDID} for resource ${resource}`, err));
             }
 
             persistence.ungrant(accessControlModes.READ, forDID, resource, callback);
@@ -45,7 +45,7 @@ function SecurityDecorator(enclave) {
     this.grantWriteAccess = (forDID, resource, callback) => {
         persistence.addZoneParent(forDID, accessControlModes.WRITE, err => {
             if (err) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to grant write access to ${forDID} for resource ${resource}`, err));
+                return callback(createOpenDSUErrorWrapper(`Failed to grant write access to ${forDID} for resource ${resource}`, err));
             }
 
             persistence.grant(accessControlModes.WRITE, forDID, resource, callback);
@@ -55,7 +55,7 @@ function SecurityDecorator(enclave) {
     this.hasWriteAccess = (forDID, resource, callback) => {
         persistence.loadResourceDirectGrants(accessControlModes.WRITE, resource, (err, grants) => {
             if (err) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to load direct grants for resource ${resource}`, err));
+                return callback(createOpenDSUErrorWrapper(`Failed to load direct grants for resource ${resource}`, err));
             }
 
             if (grants.indexOf(forDID) !== -1) {
@@ -69,7 +69,7 @@ function SecurityDecorator(enclave) {
     this.grantAdminAccess = (forDID, resource, callback) => {
         persistence.addZoneParent(forDID, accessControlModes.ADMIN, err => {
             if (err) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to grant admin access to ${forDID} for resource ${resource}`, err));
+                return callback(createOpenDSUErrorWrapper(`Failed to grant admin access to ${forDID} for resource ${resource}`, err));
             }
 
             persistence.grant(accessControlModes.ADMIN, forDID, resource, callback);
@@ -79,7 +79,7 @@ function SecurityDecorator(enclave) {
     this.hasAdminAccess = (forDID, resource, callback) => {
         persistence.loadResourceDirectGrants(accessControlModes.ADMIN, resource, (err, grants) => {
             if (err) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to load direct grants for resource ${resource}`, err));
+                return callback(createOpenDSUErrorWrapper(`Failed to load direct grants for resource ${resource}`, err));
             }
 
             if (grants.indexOf(forDID) !== -1) {
@@ -93,7 +93,7 @@ function SecurityDecorator(enclave) {
     this.revokeAdminAccess = (forDID, resource, callback) => {
         persistence.delZoneParent(forDID, accessControlModes.ADMIN, err => {
             if (err) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to revoke admin access to ${forDID} for resource ${resource}`, err));
+                return callback(createOpenDSUErrorWrapper(`Failed to revoke admin access to ${forDID} for resource ${resource}`, err));
             }
 
             persistence.ungrant(accessControlModes.ADMIN, forDID, resource, callback);
@@ -104,67 +104,67 @@ function SecurityDecorator(enclave) {
         const callback = args[args.length - 1];
         this.hasAdminAccess(forDID, lambdaName, (err, hasAccess) => {
             if (err) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to check if ${forDID} has admin access to ${lambdaName}`, err));
+                return callback(createOpenDSUErrorWrapper(`Failed to check if ${forDID} has admin access to ${lambdaName}`, err));
             }
 
             if (!hasAccess) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${lambdaName}`));
+                return callback(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${lambdaName}`));
             }
 
             enclave.callLambda(lambdaName, ...args);
         })
     }
 
-    this.insertRecord = (forDID, tableName, record, callback) => {
+    this.insertRecord = (forDID, tableName, pk, record, callback) => {
         this.hasWriteAccess(forDID, tableName, (err, hasAccess) => {
             if (err) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to check if ${forDID} has write access to ${tableName}`, err));
+                return callback(createOpenDSUErrorWrapper(`Failed to check if ${forDID} has write access to ${tableName}`, err));
             }
 
             if (!hasAccess) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${tableName}`));
+                return callback(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${tableName}`));
             }
 
-            enclave.insertRecord(tableName, record, callback);
+            enclave.insertRecord(tableName, pk, record, callback);
         })
     }
 
-    this.updateRecord = (forDID, tableName, record, callback) => {
+    this.updateRecord = (forDID, tableName, pk, record, callback) => {
         this.hasWriteAccess(forDID, tableName, (err, hasAccess) => {
             if (err) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to check if ${forDID} has write access to ${tableName}`, err));
+                return callback(createOpenDSUErrorWrapper(`Failed to check if ${forDID} has write access to ${tableName}`, err));
             }
 
             if (!hasAccess) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${tableName}`));
+                return callback(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${tableName}`));
             }
 
-            enclave.updateRecord(tableName, record, callback);
+            enclave.updateRecord(tableName, pk, record, callback);
         })
     }
 
-    this.deleteRecord = (forDID, tableName, record, callback) => {
+    this.deleteRecord = (forDID, tableName, pk, callback) => {
         this.hasWriteAccess(forDID, tableName, (err, hasAccess) => {
             if (err) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to check if ${forDID} has write access to ${tableName}`, err));
+                return callback(createOpenDSUErrorWrapper(`Failed to check if ${forDID} has write access to ${tableName}`, err));
             }
 
             if (!hasAccess) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${tableName}`));
+                return callback(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${tableName}`));
             }
 
-            enclave.deleteRecord(tableName, record, callback);
+            enclave.deleteRecord(tableName, pk, callback);
         })
     }
 
     this.getRecord = (forDID, tableName, key, callback) => {
         this.hasReadAccess(forDID, tableName, (err, hasAccess) => {
             if (err) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to check if ${forDID} has read access to ${tableName}`, err));
+                return callback(createOpenDSUErrorWrapper(`Failed to check if ${forDID} has read access to ${tableName}`, err));
             }
 
             if (!hasAccess) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${tableName}`));
+                return callback(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${tableName}`));
             }
 
             enclave.getRecord(tableName, key, callback);
@@ -174,11 +174,11 @@ function SecurityDecorator(enclave) {
     this.getAllRecords = (forDID, tableName, callback) => {
         this.hasReadAccess(forDID, tableName, (err, hasAccess) => {
             if (err) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to check if ${forDID} has read access to ${tableName}`, err));
+                return callback(createOpenDSUErrorWrapper(`Failed to check if ${forDID} has read access to ${tableName}`, err));
             }
 
             if (!hasAccess) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${tableName}`));
+                return callback(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${tableName}`));
             }
 
             enclave.getAllRecords(tableName, callback);
@@ -188,11 +188,11 @@ function SecurityDecorator(enclave) {
     this.filter = (forDID, tableName, filterConditions, sort, max, callback) => {
         this.hasReadAccess(forDID, tableName, (err, hasAccess) => {
             if (err) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Failed to check if ${forDID} has read access to ${tableName}`, err));
+                return callback(createOpenDSUErrorWrapper(`Failed to check if ${forDID} has read access to ${tableName}`, err));
             }
 
             if (!hasAccess) {
-                return OpenDSUSafeCallback(callback)(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${tableName}`));
+                return callback(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${tableName}`));
             }
 
             enclave.filter(tableName, filterConditions, sort, max, callback);

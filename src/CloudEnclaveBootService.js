@@ -9,8 +9,8 @@ const sc = openDSU.loadAPI("crypto");
 
 function CloudEnclaveBootService(server) {
     const processList = {}
-    const PersistenceRegistry = require("./PersistenceRegistry");
-    const persistence = PersistenceRegistry.get(server.serverConfig.persistence.type)(...server.serverConfig.persistence.options);
+    const PersistenceFactory = require("./PersistenceFactory");
+    const persistence = PersistenceFactory.create(server.serverConfig.persistence.type)(...server.serverConfig.persistence.options);
     const SecurityDecorator = require("./SecurityDecorator");
     const CloudEnclave = require("./CloudEnclave");
 
