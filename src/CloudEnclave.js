@@ -1,22 +1,60 @@
-function CloudEnclave(didDocument, securityDecorator) {
+function CloudEnclave(config) {
+    const fs = require("fs");
+    const path = require("path");
+    require(path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, "builds", "output", "pskWebServer.js"))
     const { MessageDispatcher } = require("./MessageDispatcher");
+    const PersistenceFactory = require("./PersistenceFactory");
+    const SecurityDecorator = require("./SecurityDecorator");
+    config = JSON.parse(config);
+    const persistence = PersistenceFactory.create(config.persistence.type, ...config.persistence.options)
+    const securityDecorator = new SecurityDecorator(persistence);
     const openDSU = require("opendsu");
     const utils = openDSU.loadAPI("utils");
+    const w3cDID = openDSU.loadAPI("w3cdid");
     const ObservableMixin = utils.ObservableMixin;
     const scAPI = openDSU.loadAPI("sc");
 
-    let didDoc;
     const sc = scAPI.getSecurityContext();
     ObservableMixin(this);
 
-    const initMessaging = async (didDocument) => {
+    const initMessaging = (didDocument) => {
         this.messageDispatcher = new MessageDispatcher(didDocument)
         this.messageDispatcher.waitForMessages((err, commandObject) => {
             this.execute(err, commandObject);
         });
+    }
+
+    const loadLambdas = () => {
+        const lambdasPath = config.lambdasPath;
+        try {
+            fs.readdirSync(lambdasPath).forEach(file => {
+                if (file.endsWith(".js")) {
+                    const importedObj = require(lambdasPath + "/" + file);
+                    for (let prop in importedObj) {
+                        if (typeof importedObj[prop] === "function") {
+                            importedObj[prop](this);
+                        }
+                    }
+                }
+            })
+        } catch (err) {
+            return this.dispatchEvent("error", err);
+        }
+    }
+
+    const init = async () => {
+        let secret = process.env.CLOUD_ENCLAVE_SECRET;
+        if (typeof secret === "object") {
+            secret = secret[config.name];
+        }
+
+        const didDocument = await $$.promisify(w3cDID.resolveNameDID)(config.domain, config.name, secret);
+        initMessaging(didDocument);
+        loadLambdas();
         console.log("Dispatching initialised event from server securityDecorator process");
         this.initialised = true;
         this.dispatchEvent("initialised");
+        process.send(didDocument.getIdentifier());
     }
 
     const storeDIDPrivateKeys = (privateKeys) => {
@@ -57,13 +95,18 @@ function CloudEnclave(didDocument, securityDecorator) {
 
     if (sc.isInitialised()) {
         console.log("Security context already initialised");
-        initMessaging(didDocument);
+        init();
     } else {
         sc.on("initialised", () => {
             console.log("Security context was initialised");
-            initMessaging(didDocument);
+            init();
         })
     }
 }
 
 module.exports = CloudEnclave;
+
+const args = process.argv;
+if (args.length > 2) {
+    new CloudEnclave(args[2]);
+}

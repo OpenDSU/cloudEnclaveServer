@@ -9,10 +9,7 @@ const sc = openDSU.loadAPI("crypto");
 
 function CloudEnclaveBootService(server) {
     const processList = {}
-    const PersistenceFactory = require("./PersistenceFactory");
-    const persistence = PersistenceFactory.create(server.serverConfig.persistence.type)(...server.serverConfig.persistence.options);
     const SecurityDecorator = require("./SecurityDecorator");
-    const CloudEnclave = require("./CloudEnclave");
 
     this.createEnclave = async (req, res) => {
         const adminDID = req.params.adminDID;
@@ -29,44 +26,47 @@ function CloudEnclaveBootService(server) {
 
     }
 
-    this.bootEnclaves = () => {
-        const storageFolder = this.getStorageFolder();
-        const mainEnclaveFolderPath = path.join(storageFolder, "main");
-
-        const _boot = () => {
-            try {
-                fs.accessSync(mainEnclaveFolderPath);
-            } catch (e) {
-                return w3cDID.resolveNameDID(process.env.CLOUD_ENCLAVE_DOMAIN, server.serverConfig.name, process.env.CLOUD_ENCLAVE_SECRET, async (err, didDoc) => {
-                    if (err) {
-                        server.dispatchEvent("error", err);
-                        return;
-                    }
-                    initMainEnclave(didDoc);
+    this.bootEnclave = async (enclaveConfig) => {
+        const child = require("child_process").fork(path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, ".", __dirname, "./CloudEnclave.js"), [JSON.stringify(enclaveConfig)]);
+        const listenForMessage = () => {
+            return new Promise((resolve) => {
+                child.on('message', (didIdentifier) => {
+                    processList[didIdentifier] = child;
+                    resolve();
                 });
+            });
+        };
+
+        await listenForMessage();
+    }
+
+    this.bootEnclaves = async () => {
+        const storageFolder = this.getStorageFolder();
+        const _boot = async () => {
+            const enclaveConfigFolders = fs.readdirSync(storageFolder).filter(file => fs.statSync(path.join(storageFolder, file)).isDirectory());
+            for (let i = 0; i < enclaveConfigFolders.length; i++) {
+                const enclaveConfigFolder = enclaveConfigFolders[i];
+                const enclaveConfigFile = fs.readdirSync(path.join(storageFolder, enclaveConfigFolder)).find(file => file.endsWith(".json"));
+                if (enclaveConfigFile) {
+                    const enclaveConfig = JSON.parse(fs.readFileSync(path.join(storageFolder, enclaveConfigFolder, enclaveConfigFile)));
+                    await this.bootEnclave(enclaveConfig);
+                }
             }
 
-            w3cDID.resolveNameDID(process.env.CLOUD_ENCLAVE_DOMAIN, server.serverConfig.name, process.env.CLOUD_ENCLAVE_SECRET, async (err, didDoc) => {
-                if (err) {
-                    server.dispatchEvent("error", err);
-                    return;
-                }
-
-                initMainEnclave(didDoc);
-            });
+            return server.dispatchEvent("initialised", Object.keys(processList));
         }
 
         const scApi = require("opendsu").loadApi("sc");
         const sc = scApi.getSecurityContext();
         if (sc.isInitialised()) {
-            return _boot();
+            return await _boot();
         }
-        sc.on("initialised", () => {
-            _boot();
+        sc.on("initialised", async () => {
+            return await _boot();
         });
     }
 
-    const initMainEnclave = (didDocument) => {
+    const initEnclave = (didDocument) => {
         const securityDecorator = new SecurityDecorator(persistence);
         this.main = new CloudEnclave(didDocument, securityDecorator);
         this.didDocument = didDocument;
@@ -108,7 +108,7 @@ function CloudEnclaveBootService(server) {
 
     }
 
-    const loadLambdas = (serverEnclaveProcess, server) => {
+    const loadLambdas = (cloudEnclaveProcess, server) => {
         const lambdasPath = server.serverConfig.lambdas;
         try {
             fs.readdirSync(lambdasPath).forEach(file => {
@@ -116,7 +116,7 @@ function CloudEnclaveBootService(server) {
                     const importedObj = require(lambdasPath + "/" + file);
                     for (let prop in importedObj) {
                         if (typeof importedObj[prop] === "function") {
-                            importedObj[prop](serverEnclaveProcess);
+                            importedObj[prop](cloudEnclaveProcess);
                         }
                     }
                 }
