@@ -2,7 +2,7 @@ function CloudEnclave(config) {
     const fs = require("fs");
     const path = require("path");
     require(path.join(process.env.PSK_ROOT_INSTALATION_FOLDER, "builds", "output", "pskWebServer.js"))
-    const { MessageDispatcher } = require("./MessageDispatcher");
+    const {MessageDispatcher} = require("./MessageDispatcher");
     const PersistenceFactory = require("./PersistenceFactory");
     const SecurityDecorator = require("./SecurityDecorator");
     config = JSON.parse(config);
@@ -76,9 +76,15 @@ function CloudEnclave(config) {
             const params = commandObject.params;
             const callback = (err, res) => {
                 const resultObj = {
-                    "commandResult": err ? err : res,
+                    "commandResult": res,
                     "commandID": commandObject.commandID
                 };
+
+                if (err) {
+                    resultObj.commandResult = err;
+                    resultObj.error = true;
+                }
+
                 this.messageDispatcher.sendMessage(JSON.stringify(resultObj), clientDID);
             }
             params.push(callback);

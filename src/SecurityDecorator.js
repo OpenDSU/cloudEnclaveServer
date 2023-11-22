@@ -4,17 +4,29 @@
 // a lambda can be called by a did if the did is part of the zone that has access to the resource
 // a lambda has a forDID as first argument
 
+const {ACCESS_CONTROL_MODES: accessControlModes} = require("./constants");
+
 function SecurityDecorator(enclave) {
     const accessControlModes = require("./constants").ACCESS_CONTROL_MODES;
     const persistence = require("acl-magic").createEnclavePersistence(enclave, undefined, "cloud-enclave");
 
     this.grantReadAccess = (forDID, resource, callback) => {
-        persistence.addZoneParent(forDID, accessControlModes.READ, err => {
+        persistence.loadZoneParents(forDID, (err, parents) => {
             if (err) {
-                return callback(createOpenDSUErrorWrapper(`Failed to grant read access to ${forDID} for resource ${resource}`, err));
+                return callback(createOpenDSUErrorWrapper(`Failed to load zone parents for ${forDID}`, err));
             }
 
-            persistence.grant(accessControlModes.READ, forDID, resource, callback);
+            if (parents.indexOf(accessControlModes.READ) !== -1) {
+                return persistence.grant(accessControlModes.READ, forDID, resource, callback);
+            }
+
+            persistence.addZoneParent(forDID, accessControlModes.READ, err => {
+                if (err) {
+                    return callback(createOpenDSUErrorWrapper(`Failed to grant read access to ${forDID} for resource ${resource}`, err));
+                }
+
+                persistence.grant(accessControlModes.READ, forDID, resource, callback);
+            });
         });
     }
 
@@ -43,13 +55,29 @@ function SecurityDecorator(enclave) {
     }
 
     this.grantWriteAccess = (forDID, resource, callback) => {
-        persistence.addZoneParent(forDID, accessControlModes.WRITE, err => {
+        this.grantReadAccess(forDID, resource, err => {
             if (err) {
-                return callback(createOpenDSUErrorWrapper(`Failed to grant write access to ${forDID} for resource ${resource}`, err));
+                return callback(createOpenDSUErrorWrapper(`Failed to grant read access to ${forDID} for resource ${resource}`, err));
             }
 
-            persistence.grant(accessControlModes.WRITE, forDID, resource, callback);
-        });
+            persistence.loadZoneParents(forDID, (err, parents) => {
+                if (err) {
+                    return callback(createOpenDSUErrorWrapper(`Failed to load zone parents for ${forDID}`, err));
+                }
+
+                if (parents.indexOf(accessControlModes.WRITE) !== -1) {
+                    return persistence.grant(accessControlModes.WRITE, forDID, resource, callback);
+                }
+
+                persistence.addZoneParent(forDID, accessControlModes.WRITE, err => {
+                    if (err) {
+                        return callback(createOpenDSUErrorWrapper(`Failed to grant write access to ${forDID} for resource ${resource}`, err));
+                    }
+
+                    persistence.grant(accessControlModes.WRITE, forDID, resource, callback);
+                });
+            });
+        })
     }
 
     this.hasWriteAccess = (forDID, resource, callback) => {
@@ -108,10 +136,10 @@ function SecurityDecorator(enclave) {
             }
 
             if (!hasAccess) {
-                return callback(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${lambdaName}`));
+                return callback(createOpenDSUErrorWrapper(`Admin access denied for ${forDID} to ${lambdaName}`));
             }
 
-            enclave.callLambda(lambdaName, ...args);
+            enclave.callLambda(forDID, lambdaName, ...args);
         })
     }
 
@@ -122,10 +150,10 @@ function SecurityDecorator(enclave) {
             }
 
             if (!hasAccess) {
-                return callback(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${tableName}`));
+                return callback(createOpenDSUErrorWrapper(`Write access denied for ${forDID} to ${tableName}`));
             }
 
-            enclave.insertRecord(tableName, pk, record, callback);
+            enclave.insertRecord(forDID, tableName, pk, record, callback);
         })
     }
 
@@ -136,10 +164,10 @@ function SecurityDecorator(enclave) {
             }
 
             if (!hasAccess) {
-                return callback(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${tableName}`));
+                return callback(createOpenDSUErrorWrapper(`Write access denied for ${forDID} to ${tableName}`));
             }
 
-            enclave.updateRecord(tableName, pk, record, callback);
+            enclave.updateRecord(forDID, tableName, pk, record, callback);
         })
     }
 
@@ -150,10 +178,10 @@ function SecurityDecorator(enclave) {
             }
 
             if (!hasAccess) {
-                return callback(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${tableName}`));
+                return callback(createOpenDSUErrorWrapper(`Write access denied for ${forDID} to ${tableName}`));
             }
 
-            enclave.deleteRecord(tableName, pk, callback);
+            enclave.deleteRecord(forDID, tableName, pk, callback);
         })
     }
 
@@ -164,10 +192,10 @@ function SecurityDecorator(enclave) {
             }
 
             if (!hasAccess) {
-                return callback(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${tableName}`));
+                return callback(createOpenDSUErrorWrapper(`Read access denied for ${forDID} to ${tableName}`));
             }
 
-            enclave.getRecord(tableName, key, callback);
+            enclave.getRecord(forDID, tableName, key, callback);
         })
     }
 
@@ -178,10 +206,10 @@ function SecurityDecorator(enclave) {
             }
 
             if (!hasAccess) {
-                return callback(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${tableName}`));
+                return callback(createOpenDSUErrorWrapper(`Read access denied for ${forDID} to ${tableName}`));
             }
 
-            enclave.getAllRecords(tableName, callback);
+            enclave.getAllRecords(forDID, tableName, callback);
         })
     }
 
@@ -192,10 +220,10 @@ function SecurityDecorator(enclave) {
             }
 
             if (!hasAccess) {
-                return callback(createOpenDSUErrorWrapper(`Access denied for ${forDID} to ${tableName}`));
+                return callback(createOpenDSUErrorWrapper(`Read access denied for ${forDID} to ${tableName}`));
             }
 
-            enclave.filter(tableName, filterConditions, sort, max, callback);
+            enclave.filter(forDID, tableName, filterConditions, sort, max, callback);
         })
     }
 }

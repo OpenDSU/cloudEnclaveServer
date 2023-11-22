@@ -18,6 +18,9 @@ assert.callback("SecurityDecorator test", async (callback) => {
             await $$.promisify(securityDecorator.revokeReadAccess)(forDID, resource);
             const hasReadAccessAfterRevoke = await $$.promisify(securityDecorator.hasReadAccess)(forDID, resource);
             assert.false(hasReadAccessAfterRevoke, "Failed to check if read access was revoked");
+            await $$.promisify(securityDecorator.grantReadAccess)(forDID, resource);
+            const hasReadAccessAfterGrant = await $$.promisify(securityDecorator.hasReadAccess)(forDID, resource);
+            assert.true(hasReadAccessAfterGrant, "Failed to check if read access was granted");
         } catch (e) {
             error = e;
         }
