@@ -1,11 +1,3 @@
-// 3 zones: read, write, admin
-// each did is a child zone for the read, write and/or admin zones
-// a lambda name is a resource in acl-magic
-// a lambda can be called by a did if the did is part of the zone that has access to the resource
-// a lambda has a forDID as first argument
-
-const {ACCESS_CONTROL_MODES: accessControlModes} = require("./constants");
-
 function SecurityDecorator(enclave) {
     const accessControlModes = require("./constants").ACCESS_CONTROL_MODES;
     const persistence = require("acl-magic").createEnclavePersistence(enclave, undefined, "cloud-enclave");
