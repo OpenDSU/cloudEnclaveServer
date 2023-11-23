@@ -6,7 +6,19 @@ function CloudEnclave(config) {
     const PersistenceFactory = require("./PersistenceFactory");
     const SecurityDecorator = require("./SecurityDecorator");
     config = JSON.parse(config);
-    const persistence = PersistenceFactory.create(config.persistence.type, ...config.persistence.options)
+    if(!config.name){
+        config.name = "main";
+    }
+    if (!config.persistence) {
+        config.persistence = {
+            type: "loki",
+            options: [path.join(config.rootFolder, config.name, "db")]
+        }
+    }
+    if(!config.lambdasPath){
+        config.lambdasPath = path.join(config.configLocation, config.name, "lambdas");
+    }
+    const persistence = PersistenceFactory.create(config.persistence.type, ...config.persistence.options);
     const securityDecorator = new SecurityDecorator(persistence);
     const openDSU = require("opendsu");
     const utils = openDSU.loadAPI("utils");

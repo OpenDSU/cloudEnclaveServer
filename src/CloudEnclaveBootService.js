@@ -5,12 +5,8 @@ const enclaveAPI = openDSU.loadAPI("enclave");
 
 const path = require("path");
 const fs = require("fs");
-const sc = openDSU.loadAPI("crypto");
-
 function CloudEnclaveBootService(server) {
     const processList = {}
-    const SecurityDecorator = require("./SecurityDecorator");
-
     this.createEnclave = async (req, res) => {
         const adminDID = req.params.adminDID;
         const key = require('crypto').randomBytes(16).toString("base64")
@@ -41,14 +37,16 @@ function CloudEnclaveBootService(server) {
     }
 
     this.bootEnclaves = async () => {
-        const storageFolder = this.getStorageFolder();
+        const configFolder = this.getConfigFolder();
         const _boot = async () => {
-            const enclaveConfigFolders = fs.readdirSync(storageFolder).filter(file => fs.statSync(path.join(storageFolder, file)).isDirectory());
+            const enclaveConfigFolders = fs.readdirSync(configFolder).filter(file => fs.statSync(path.join(configFolder, file)).isDirectory());
             for (let i = 0; i < enclaveConfigFolders.length; i++) {
                 const enclaveConfigFolder = enclaveConfigFolders[i];
-                const enclaveConfigFile = fs.readdirSync(path.join(storageFolder, enclaveConfigFolder)).find(file => file.endsWith(".json"));
+                const enclaveConfigFile = fs.readdirSync(path.join(configFolder, enclaveConfigFolder)).find(file => file.endsWith(".json"));
                 if (enclaveConfigFile) {
-                    const enclaveConfig = JSON.parse(fs.readFileSync(path.join(storageFolder, enclaveConfigFolder, enclaveConfigFile)));
+                    const enclaveConfig = JSON.parse(fs.readFileSync(path.join(configFolder, enclaveConfigFolder, enclaveConfigFile)));
+                    enclaveConfig.rootFolder = this.getStorageFolder();
+                    enclaveConfig.configLocation = configFolder;
                     await this.bootEnclave(enclaveConfig);
                 }
             }
@@ -65,32 +63,6 @@ function CloudEnclaveBootService(server) {
             return await _boot();
         });
     }
-
-    const initEnclave = (didDocument) => {
-        const securityDecorator = new SecurityDecorator(persistence);
-        this.main = new CloudEnclave(didDocument, securityDecorator);
-        this.didDocument = didDocument;
-        loadLambdas(this.main, server);
-        if (this.main.initialised) {
-            finishInit();
-        } else {
-            this.main.on("initialised", finishInit)
-        }
-    }
-
-    const finishInit = () => {
-        console.log("Main enclave process initialised");
-        this.main.name = server.serverConfig.name;
-        server.remoteDID = this.didDocument.getIdentifier();
-        if (server.serverConfig.auditDID !== undefined) {
-            initAudit(server.remoteDID, server.serverConfig.auditDID);
-        } else {
-            server.initialised = true;
-            server.dispatchEvent("initialised", this.didDocument.getIdentifier());
-            console.log("Initialised event dispatched");
-        }
-    }
-
     const initAudit = async (currentDID, auditDID) => {
         const clientSeedSSI = keySSISpace.createSeedSSI("vault", "other secret");
         const clientDIDDocument = await $$.promisify(w3cDID.createIdentity)("ssi:key", clientSeedSSI);
@@ -126,48 +98,12 @@ function CloudEnclaveBootService(server) {
         }
     }
 
-    this.bootMain = (mainPath) => {
-        this.getDirectories(mainPath, async (err, dirs) => {
-            if (err) {
-                console.log(err);
-                return err;
-            }
-
-            const didIdentifier = sc.decodeBase58(dirs[0]).toString("utf8");
-            this.main = new CloudEnclave(didIdentifier, undefined, path.join(mainPath, dirs[0]));
-            this.main.on("initialised", () => {
-                server.remoteDID = didIdentifier;
-                server.initialised = true;
-                server.dispatchEvent("initialised");
-            })
-        })
-    }
-
-    this.createFolderForMainEnclave = (folderPath, callback) => {
-        fs.mkdir(folderPath, {recursive: true}, (err) => {
-            if (err) {
-                return callback(err);
-            }
-            return callback(undefined, folderPath);
-        });
-    }
-
     this.getStorageFolder = () => {
         return path.resolve(server.serverConfig.rootFolder);
     }
 
-    this.getDirectories = (source, callback) => {
-        fs.readdir(source, {withFileTypes: true}, (err, files) => {
-            if (err) {
-                callback(err)
-            } else {
-                let dirs = files
-                    .filter(dirent => dirent.isDirectory());
-                dirs = dirs.map(dirent => dirent.name);
-                callback(undefined, dirs);
-
-            }
-        })
+    this.getConfigFolder = () => {
+        return path.resolve(server.serverConfig.configLocation);
     }
 }
 
