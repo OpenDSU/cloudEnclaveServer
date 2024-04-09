@@ -40,7 +40,7 @@ function LokiDBPathStrategy(storageFolder, config) {
             enclaveDSU.insertRecord("", table, pathKeySSI.getIdentifier(), {
                 identifier: pathKeySSI.getIdentifier(),
                 specificString: pathKeySSI.getSpecificString()
-            }, async (err, result) => {
+            }, async (err) => {
                 if (err) {
                     return callback(err);
                 }

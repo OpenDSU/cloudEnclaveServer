@@ -1,4 +1,4 @@
-module.exports = config = {
+module.exports = {
     rootFolder: "../cloud-enclave-root",
     name: "cloud-enclave"
 }

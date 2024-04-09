@@ -8,10 +8,9 @@ const fs = require("fs");
 function CloudEnclaveBootService(server) {
     const processList = {}
     this.createEnclave = async (req, res) => {
-        const adminDID = req.params.adminDID;
         const key = require('crypto').randomBytes(16).toString("base64")
         const didDocument = await $$.promisify(w3cDID.createIdentity)("key", undefined, key);
-        this.createFolderForDID(didDocument.getIdentifier(), (err, didDir) => {
+        this.createFolderForDID(didDocument.getIdentifier(), (err) => {
             if (err) {
                 res.end(err);
             }

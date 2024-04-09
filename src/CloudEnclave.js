@@ -69,13 +69,6 @@ function CloudEnclave(config) {
         process.send(didDocument.getIdentifier());
     }
 
-    const storeDIDPrivateKeys = (privateKeys) => {
-        return Promise.all(privateKeys
-            .map(key => {
-                return $$.promisify(securityDecorator.addPrivateKeyForDID)(didDoc, key)
-            }));
-    }
-
     this.execute = (err, commandObject) => {
         if (err) {
             console.log(err);

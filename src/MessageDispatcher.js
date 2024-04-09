@@ -17,7 +17,7 @@ function MessageDispatcher(didDoc) {
                 return console.log(err);
             }
             console.log("Preparing to send message to" + clientDID);
-            didDoc.sendMessage(result, clientDIDDocument, (err, res) => {
+            didDoc.sendMessage(result, clientDIDDocument, (err) => {
                 console.log(`Message sent to ${clientDID} client`)
                 if (err) {
                     console.log(err);
