@@ -12,7 +12,7 @@ const crypto = openDSU.loadAPI("crypto");
 const utils = require("../../opendsu-sdk/modules/opendsu/enclave/impl/utils");
 const PathKeyMapping = require("../../opendsu-sdk/modules/opendsu/enclave/impl/PathKeyMapping");
 const ServerEnclave = require("../src/ServerEnclave");
-const { LokiDBPathStrategy } = require("../src/PathMappingStorageStrategy");
+const {LokiDBPathStrategy} = require("../src/PathMappingStorageStrategy");
 
 assert.callback('PathKeySSI mapping test', (testFinished) => {
     dc.createTestFolder('testFolder', async (err, folder) => {
@@ -23,7 +23,10 @@ assert.callback('PathKeySSI mapping test', (testFinished) => {
                 "option": {}
             }
         }
-        await tir.launchConfigurableApiHubTestNodeAsync({ domains: [{ name: "vault", config: vaultDomainConfig }], rootFolder: folder });
+        await tir.launchConfigurableApiHubTestNodeAsync({
+            domains: [{name: "vault", config: vaultDomainConfig}],
+            rootFolder: folder
+        });
         const enclave = new ServerEnclave(folder);
         const sc = scAPI.getSecurityContext(enclave);
         sc.on("initialised", async () => {

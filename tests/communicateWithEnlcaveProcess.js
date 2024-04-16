@@ -8,7 +8,7 @@ const openDSU = require("opendsu");
 const w3cDID = openDSU.loadAPI("w3cdid");
 const enclaveAPI = openDSU.loadApi("enclave");
 
-assert.callback("Test ", (testFinished)=>{
+assert.callback("Test ", (testFinished) => {
     const scAPI = openDSU.loadAPI("sc");
     const sc = scAPI.getSecurityContext();
 
@@ -17,8 +17,8 @@ assert.callback("Test ", (testFinished)=>{
         let [err, didDocument] = await $$.call(w3cDID.resolveNameDID, "vault", "test", "testSecret");
         const remoteEnclaveClient = enclaveAPI.initialiseRemoteEnclave(didDocument.getIdentifier(), remoteEnclaveDID);
         remoteEnclaveClient.on("initialised", async () => {
-            
-            remoteEnclaveClient.insertRecord("", "test", 1, { data: "data" }, (err, result) => {
+
+            remoteEnclaveClient.insertRecord("", "test", 1, {data: "data"}, (err, result) => {
                 console.log(err, result);
                 assert.true(err === undefined, "Lambda call failed");
                 testFinished();

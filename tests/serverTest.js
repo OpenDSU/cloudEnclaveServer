@@ -10,7 +10,7 @@ const w3cDID = openDSU.loadAPI("w3cdid");
 const enclaveAPI = openDSU.loadApi("enclave");
 const bdnsAPI = openDSU.loadApi("bdns");
 
-const { createInstance } = require("../");
+const {createInstance} = require("../");
 process.env.CLOUD_ENCLAVE_SECRET = "something";
 
 assert.callback('Create enclave test', (testFinished) => {
@@ -52,7 +52,7 @@ assert.callback('Create enclave test', (testFinished) => {
                 const remoteEnclaveClient = enclaveAPI.initialiseRemoteEnclave(clientDIDDocument.getIdentifier(), serverDID);
 
                 const TABLE = "test_table";
-                const addedRecord = { data: 1 };
+                const addedRecord = {data: 1};
                 remoteEnclaveClient.on("initialised", async () => {
                     try {
                         await $$.promisify(remoteEnclaveClient.insertRecord)("some_did", TABLE, "pk1", addedRecord, addedRecord);

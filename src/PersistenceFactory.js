@@ -1,6 +1,8 @@
 const {PERSISTENCE_TYPES} = require("./constants");
 const factories = {};
-function PersistenceFactory() {}
+
+function PersistenceFactory() {
+}
 
 PersistenceFactory.prototype.register = (storageType, persistenceFactoryFunction) => {
     factories[storageType] = persistenceFactoryFunction;

@@ -9,9 +9,9 @@ const benchmarkSend = async function (message, remoteEnclaveDID, callback) {
 
     const client = enclaveAPI.initialiseRemoteEnclave(clientDIDDocument.getIdentifier(), remoteEnclaveDID);
     client.on("initialised", () => {
-            client.callLambda("benchmarkReceive", message, (err, res) => { 
-                callback(err, res);
-            });
+        client.callLambda("benchmarkReceive", message, (err, res) => {
+            callback(err, res);
+        });
     })
 }
 

@@ -1,4 +1,4 @@
-const { getLokiEnclaveFacade } = require("./utils");
+const {getLokiEnclaveFacade} = require("./utils");
 const constants = require("./constants");
 
 function LokiDBPathStrategy(storageFolder, config) {
@@ -51,8 +51,7 @@ function LokiDBPathStrategy(storageFolder, config) {
                         //to do 
                     }
                     callback();
-                }
-                catch (e) {
+                } catch (e) {
                     callback(e);
                 }
             })
@@ -103,7 +102,7 @@ function LokiDBPathStrategy(storageFolder, config) {
                     }
 
 
-                    callback(undefined, { ...compactedKeys, ...scatteredKeys });
+                    callback(undefined, {...compactedKeys, ...scatteredKeys});
                 })
             });
         }
@@ -117,7 +116,7 @@ function LokiDBPathStrategy(storageFolder, config) {
             if (err) {
                 return callback(err);
             }
-            if(records == undefined){
+            if (records == undefined) {
                 return callback(undefined, pathKeyMap);
             }
             records.forEach(record => {
@@ -181,4 +180,4 @@ function LokiDBPathStrategy(storageFolder, config) {
     init();
 }
 
-module.exports = { LokiDBPathStrategy };
+module.exports = {LokiDBPathStrategy};

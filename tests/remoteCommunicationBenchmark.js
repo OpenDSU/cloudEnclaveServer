@@ -94,8 +94,7 @@ assert.callback('Create accounting enclave test', (testFinished) => {
             sc.on("initialised", async () => {
                 await createSendEnclaveClient();
             });
-        }
-        catch (err) {
+        } catch (err) {
             console.log(err);
         }
     })
