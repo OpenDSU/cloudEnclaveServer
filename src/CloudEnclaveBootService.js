@@ -13,11 +13,12 @@ function CloudEnclaveBootService(server) {
         const didDocument = await $$.promisify(w3cDID.createIdentity)("key", undefined, key);
         this.createFolderForDID(didDocument.getIdentifier(), (err) => {
             if (err) {
-                res.end(err);
+                console.debug("Failed to create folder for DID in order to create enclave.", err);
+                res.end("Failed to create folder for DID in order to create enclave.");
             }
             // initEnclave(logger, didDocument, didDir);
             //to do
-            res.end(didDocument.getIdentifier())
+            res.end(didDocument.getIdentifier());
         })
 
     }
